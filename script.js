@@ -19,7 +19,12 @@ require([
     container: "viewDiv",
     map: map,
     center: [-118.71511, 34.09042], // longitude, latitude
-    zoom: 11
+    zoom: 11,
+    highlightOptions: {
+      color: [255, 0, 5, 1],
+      haloOpacity: 0.9,
+      fillOpacity: 0.2
+    }
   });
 
  
@@ -33,14 +38,15 @@ require([
   // console.log(trailheadsLayer )
 
 
+// ------------------------------------------------------------------------------------------------------
+// HOVER ON FEATURE
   // var activeGraphic;
 
   // function EmptyGraphic(event) {
   //   return view.hitTest(event).then(function (response) {
-  //    console.log(response.results.length)
-  //     // Get the Trail graphics only
+  //   //  console.log(response.results.length)
   //     if (response.results.length===0) {
-  //       console.log('hey')
+  //       $('#viewDiv').css('cursor','default')
   //       if (highlight) {
   //         highlight.remove();
   //       }
@@ -59,7 +65,6 @@ require([
   //         return (result.graphic.layer === trailheadsLayer);
   //       })[0].graphic;
   //     }
-  //     // Only return new graphics are found
   //     if (graphic) {
   //       if (!activeGraphic || (activeGraphic.attributes.OBJECTID !== graphic.attributes.OBJECTID)) {
   //         return graphic;
@@ -76,17 +81,18 @@ require([
   // view.on("pointer-move", function(event){
   //   findNearestGraphic(event).then(function(graphic){
   //     if (graphic) {
-  //       activeGraphic = graphic;
-
-
-  //           view.whenLayerView(graphic.layer).then(function(layerView){
-         
-  //                 if (highlight) {
-  //                   highlight.remove();
-  //                 }
-  //                 highlight=layerView.highlight(graphic);
-              
-  //               })
+  //       activeGraphic = graphic;  
+  // $(graphic).ready(function(){
+  //  $('#viewDiv').css('cursor','pointer')
+  // })
+ 
+  //   view.whenLayerView(graphic.layer).then(function(layerView){          
+  //         if (highlight) {
+  //           highlight.remove();
+  //         }
+  //         highlight=layerView.highlight(graphic);
+      
+  //       })
        
   //     }
   //   });
@@ -96,6 +102,8 @@ require([
   //   EmptyGraphic(event)
   
   // });
+
+  // ------------------------------------------------------------------------------------------------------
 
   // FOR CLICK
 
@@ -111,11 +119,12 @@ require([
         })[0].graphic;
         console.log('hey')
         view.whenLayerView(graphic.layer).then(function(layerView){
-          view.focus()
+         
           if (highlight) {
             highlight.remove();
           }
           highlight=layerView.highlight(graphic);
+          graphicsLayer.removeAll()
       
         })
         console.log(graphic.attributes['OBJECTID']);
@@ -126,10 +135,64 @@ require([
 
 
 
+  var activeGraphic;
+
+  function notOnGraphic(event) {
+    return view.hitTest(event).then(function (response) {
+    //  console.log(response.results.length)
+      if (response.results.length===0) {
+        $('#viewDiv').css('cursor','default')
+      }
+    });
+  }
 
 
+   view.on("pointer-move", function(event){
+    notOnGraphic(event)
+  
+  });
 
   
+  function findNearestGraphic(event) {
+    return view.hitTest(event).then(function (response) {
+      var graphic;
+      // Get the Trail graphics only
+      if (response.results.length) {
+        graphic = response.results.filter(function (result) {
+          return (result.graphic.layer === trailheadsLayer);
+        })[0].graphic;
+      }
+      if (graphic) {
+        if (!activeGraphic || (activeGraphic.attributes.OBJECTID !== graphic.attributes.OBJECTID)) {
+          return graphic;
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    });
+  }
+
+
+  view.on("pointer-move", function(event){
+    findNearestGraphic(event).then(function(graphic){
+      if (graphic) {
+        activeGraphic = graphic;  
+  $(graphic).ready(function(){
+   $('#viewDiv').css('cursor','pointer')
+  })
+ 
+      }
+    });
+  });
+
+  
+
+  // ------------------------------------------------------------------------------------------------------
+
+
+
   
   
   var graphicsLayer = new GraphicsLayer();
@@ -137,6 +200,9 @@ require([
   
   function addGraphics(result) {
       graphicsLayer.removeAll();
+      if (highlight) {
+        highlight.remove();
+      }
       result.features.forEach(function(feature){
         var g = new Graphic({
           geometry: feature.geometry,
@@ -163,7 +229,7 @@ require([
   
   
     // ------------------------------------------------------------------------------------------------------------------------
-    // var pointUrl = "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails_Styled/FeatureServer/0";
+    // // var pointUrl = "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails_Styled/FeatureServer/0";
     // var queryTask = new QueryTask({
     //   url: pointUrl 
     // });
